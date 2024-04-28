@@ -23,8 +23,10 @@ g++ -c main.cpp -I"C:\Users\Abdul Rahman\Desktop\ColorSwitchProject\include";g++
 #include <SFML\Graphics.hpp>
 #include <iostream>
 #include <cstring>
+#include <chrono>
 using namespace sf;
 using namespace std;
+using namespace chrono;
 
 
 class Button:public Sprite{
@@ -87,6 +89,69 @@ class GameOverPage{
     //homebutton,current score
 };
 
+class Pentagon : public Drawable {
+private:
+    ConvexShape pentagonShape;
+    Color currentColor;
+    Clock colorChangeClock;
+
+public:
+    Pentagon(float size) {
+        // Setup the pentagon shape
+        pentagonShape.setPointCount(5);
+        pentagonShape.setPoint(0, Vector2f(0, -size));
+        pentagonShape.setPoint(1, Vector2f(size * 0.9511f, -size * 0.3090f));
+        pentagonShape.setPoint(2, Vector2f(size * 0.5877f, size * 0.8090f));
+        pentagonShape.setPoint(3, Vector2f(-size * 0.5877f, size * 0.8090f));
+        pentagonShape.setPoint(4, Vector2f(-size * 0.9511f, -size * 0.3090f));
+        pentagonShape.setFillColor(Color::Red); 
+        pentagonShape.setOrigin(0, -size);
+        pentagonShape.setPosition(196, 348);
+
+        currentColor = Color::Red;
+    }
+
+    void updateColor() {
+        if (colorChangeClock.getElapsedTime().asSeconds() >= 2.0f) {
+            currentColor = Color(rand() % 256, rand() % 256, rand() % 256);
+            pentagonShape.setFillColor(currentColor);
+            colorChangeClock.restart(); 
+        }
+    }
+
+    void draw(RenderTarget& target, RenderStates states) const override {
+        target.draw(pentagonShape, states);
+    }
+};
+
+class Rectangle : public Drawable {
+private:
+    RectangleShape rectangleShape;
+    Color currentColor;
+    Clock colorChangeClock;
+
+public:
+    Rectangle(float width, float height) {
+        rectangleShape.setSize(Vector2f(width, height));
+        rectangleShape.setFillColor(Color::Blue); 
+        rectangleShape.setOrigin(width / 2.0f, height / 2.0f); 
+        rectangleShape.setPosition(400, 300);
+        currentColor = Color::Blue;
+    }
+
+    void updateColor() {
+        if (colorChangeClock.getElapsedTime().asSeconds() >= 2.0f) {
+            currentColor = Color(rand() % 256, rand() % 256, rand() % 256);
+            rectangleShape.setFillColor(currentColor);
+            colorChangeClock.restart(); 
+        }
+    }
+
+    void draw(RenderTarget& target, RenderStates states) const override {
+        target.draw(rectangleShape, states);
+    }
+};
+
 
 
 int main()
@@ -135,6 +200,22 @@ int main()
 
     }
     
+    RenderWindow window(VideoMode(800, 600), "SFML Pentagon Color Change");
+
+    Pentagon pentagon(50.0f); 
+
+    while (window.isOpen()) {
+        Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == Event::Closed)
+                window.close();
+        }
+        pentagon.updateColor();
+
+        window.clear(Color::Black);
+        window.draw(pentagon);
+        window.display();
+    }
 
     return 0;
 }
