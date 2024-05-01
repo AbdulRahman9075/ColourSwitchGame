@@ -1,33 +1,79 @@
-/*Compilation Commands:
-g++ -c main.cpp -I"Path of include folder in this directory"
 
-g++ main.o -o main -L"Path of lib folder in this directory" -lsfml-graphics -lsfml-window -lsfml-system
+//To run file Change Paths and run following command
 
-*/
-
-/*Execution Commands:
-
-./main
-
-*/
-
-/* Run This Single line in terminal to run program(Add paths in "" where specified):
-
-g++ -c main.cpp -I"Path of include folder in this directory";g++ main.o -o main -L"Path of lib folder in this directory" -lsfml-graphics -lsfml-window -lsfml-system;./main
-
-Example:
-g++ -c main.cpp -I"C:\Users\Abdul Rahman\Documents\GitHub\ColourSwitchGame\include";g++ main.o -o main -L"C:\Users\Abdul Rahman\Documents\GitHub\ColourSwitchGame\lib" -lsfml-graphics -lsfml-window -lsfml-system;./main
-
-*/
+//g++ -c main-combined.cpp -I"C:\Users\Abdul Rahman\Documents\GitHub\ColourSwitchGame\include";g++ main-combined.o -o main-combined -L"C:\Users\Abdul Rahman\Documents\GitHub\ColourSwitchGame\lib" -lsfml-graphics -lsfml-window -lsfml-system;./main-combined
 
 #include <SFML\Graphics.hpp>
 #include <iostream>
 #include <cstring>
 #include <cstdlib>
 #include <ctime>
+#include <chrono>
 
 using namespace sf;
 using namespace std;
+using namespace chrono;
+
+class Pentagon : public Drawable {
+private:
+    ConvexShape pentagonShape;
+    Color currentColor;
+    Clock colorChangeClock;
+
+public:
+    Pentagon(float size) {
+        pentagonShape.setPointCount(5);
+        pentagonShape.setPoint(0, Vector2f(0, -size));
+        pentagonShape.setPoint(1, Vector2f(size * 0.9511f, -size * 0.3090f));
+        pentagonShape.setPoint(2, Vector2f(size * 0.5877f, size * 0.8090f));
+        pentagonShape.setPoint(3, Vector2f(-size * 0.5877f, size * 0.8090f));
+        pentagonShape.setPoint(4, Vector2f(-size * 0.9511f, -size * 0.3090f));
+        pentagonShape.setFillColor(Color::Red); 
+        pentagonShape.setOrigin(0, -size); 
+        pentagonShape.setPosition(200, 150); 
+        currentColor = Color::Red;
+    }
+
+    void updateColor() {
+        if (colorChangeClock.getElapsedTime().asSeconds() >= 2.0f) {
+            currentColor = Color(rand() % 256, rand() % 256, rand() % 256);
+            pentagonShape.setFillColor(currentColor);
+            colorChangeClock.restart(); 
+        }
+    }
+
+    void draw(RenderTarget& target, RenderStates states) const override {
+        target.draw(pentagonShape, states);
+    }
+};
+
+class Rectangle : public Drawable {
+private:
+    RectangleShape rectangleShape;
+    Color currentColor;
+    Clock colorChangeClock;
+
+public:
+    Rectangle(float width, float height) {
+        rectangleShape.setSize(Vector2f(width, height));
+        rectangleShape.setFillColor(Color::Blue); 
+        rectangleShape.setOrigin(width / 2.0f, height / 2.0f); 
+        rectangleShape.setPosition(600, 400); 
+        currentColor = Color::Blue;
+    }
+
+    void updateColor() {
+        if (colorChangeClock.getElapsedTime().asSeconds() >= 2.0f) {
+            currentColor = Color(rand() % 256, rand() % 256, rand() % 256);
+            rectangleShape.setFillColor(currentColor);
+            colorChangeClock.restart(); 
+        }
+    }
+
+    void draw(RenderTarget& target, RenderStates states) const override {
+        target.draw(rectangleShape, states);
+    }
+};
 
 class WindowConst {
     public:
@@ -170,11 +216,76 @@ class ArrayofBlocks {
     
 };
 
+class ObstacleCircle {
+private:
+    int x;
+    int y;
+    int radius;
+    Color colors[4];
+    int position;
 
+public:
+    ObstacleCircle(int x, int y, int radius) : x(x), y(y), radius(radius), position(0) {
+        colors[0] = sf::Color::Red;
+        colors[1] = sf::Color::Green;
+        colors[2] = sf::Color::Blue;
+        colors[3] = sf::Color::Yellow;
+    }
+
+    void draw(sf::RenderWindow& window) {
+        position = (position + 1) % 4;
+        for (int i = 0; i < 4; ++i) {
+            CircleShape shape(radius, 60);
+            shape.setFillColor(colors[(i + position) % 4]);
+            shape.setPosition(x - radius, y - radius);
+            shape.setOutlineThickness(2);
+            shape.setOutlineColor(sf::Color::Black);
+            window.draw(shape);
+        }
+    }
+};
+
+class Ball {
+private:
+    int x;
+    int y;
+    int radius;
+    sf::Color colors[4];
+    int colorIndex;
+
+public:
+    Ball(int x, int y, int radius) : x(x), y(y), radius(radius), colorIndex(0) {
+        colors[0] = sf::Color::Red;
+        colors[1] = sf::Color::Green;
+        colors[2] = sf::Color::Blue;
+        colors[3] = sf::Color::Yellow;
+    }
+
+    void draw(sf::RenderWindow& window) {
+        CircleShape shape(radius);
+        shape.setFillColor(colors[colorIndex]);
+        shape.setPosition(x - radius, y - radius);
+        window.draw(shape);
+    }
+
+    void moveAbove(sf::RenderWindow& window) {
+        int maxY = y - 305;
+        while (y > maxY) {
+            y -= 1;
+            draw(window);
+            window.display();
+            sf::sleep(sf::milliseconds(10));
+        }
+    }
+
+    inline int getColorIndex() {
+        return colorIndex;
+    }
+};
 
 int main()
 {   
-
+    srand(time(NULL)); //j
     // Initializing Objects
 
     float obstacleSpeed = 9;
@@ -183,6 +294,15 @@ int main()
     ArrayofBlocks obs1(WindowConst::hidex,WindowConst::hidey,15,5,1.075);
     ArrayofBlocks obs2(WindowConst::hidex,WindowConst::hidey,15,5,1.075);
 
+    //s
+    Pentagon pentagon(50.0f);
+    Rectangle rectangle(100.0f, 80.0f); 
+
+    //j
+    ObstacleCircle obstacle(500, 550, 80);
+    Ball ball(500, 750, 30);
+
+    bool ballMoved = false;
 
     // Main Loop
     while (window.isOpen())
@@ -218,17 +338,33 @@ int main()
 
             
         }
-   
+    //s
+    pentagon.updateColor();
+    rectangle.updateColor();
     
+    //j
+    if (!ballMoved) {
+            ballMoved = true;
+            ball.moveAbove(window);
+        }
+
     window.clear(Color::Black);
     
     // Draw Functions
 
     
     home.drawHome(home,window);
-
     obs1.drawBasicBlocks(obstacleSpeed,window);
     obs2.drawMonoBlocks(obstacleSpeed,window);
+
+    //s
+    window.draw(pentagon);
+    window.draw(rectangle);
+
+    //j
+    ball.draw(window);
+    obstacle.draw(window);
+
 
     window.display();   
 
