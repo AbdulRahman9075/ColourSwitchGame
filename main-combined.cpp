@@ -14,6 +14,23 @@ using namespace sf;
 using namespace std;
 using namespace chrono;
 
+class WindowConst {
+    public:
+    static float winLength;
+    static float winHeight;
+    static float  centerx;
+    static float centery;
+    static float hidex;
+    static float hidey;
+};
+float WindowConst::winLength = 392;
+float WindowConst::winHeight = 696;
+float WindowConst::hidex = -5000;
+float WindowConst::hidey = winHeight+5000;
+float WindowConst::centerx = winLength/2;
+float WindowConst::centery = winHeight/2;
+
+
 class Pentagon : public Drawable {
 private:
     ConvexShape pentagonShape;
@@ -21,7 +38,7 @@ private:
     Clock colorChangeClock;
 
 public:
-    Pentagon(float size) {
+    Pentagon(float size,float initialX,float initialY) {
         pentagonShape.setPointCount(5);
         pentagonShape.setPoint(0, Vector2f(0, -size));
         pentagonShape.setPoint(1, Vector2f(size * 0.9511f, -size * 0.3090f));
@@ -30,7 +47,7 @@ public:
         pentagonShape.setPoint(4, Vector2f(-size * 0.9511f, -size * 0.3090f));
         pentagonShape.setFillColor(Color::Red); 
         pentagonShape.setOrigin(0, -size); 
-        pentagonShape.setPosition(200, 150); 
+        pentagonShape.setPosition(initialX, initialY); 
         currentColor = Color::Red;
     }
 
@@ -45,6 +62,10 @@ public:
     void draw(RenderTarget& target, RenderStates states) const override {
         target.draw(pentagonShape, states);
     }
+
+    void changePosition(float posx,float posy){
+        pentagonShape.setPosition(posx,posy);
+    }
 };
 
 class Rectangle : public Drawable {
@@ -54,11 +75,11 @@ private:
     Clock colorChangeClock;
 
 public:
-    Rectangle(float width, float height) {
+    Rectangle(float width, float height,float initialX,float initialY) {
         rectangleShape.setSize(Vector2f(width, height));
         rectangleShape.setFillColor(Color::Blue); 
         rectangleShape.setOrigin(width / 2.0f, height / 2.0f); 
-        rectangleShape.setPosition(600, 400); 
+        rectangleShape.setPosition(initialX, initialY); 
         currentColor = Color::Blue;
     }
 
@@ -73,23 +94,13 @@ public:
     void draw(RenderTarget& target, RenderStates states) const override {
         target.draw(rectangleShape, states);
     }
+
+    void changePosition(float posx,float posy){
+        rectangleShape.setPosition(posx,posy);
+    }
 };
 
-class WindowConst {
-    public:
-    static int winLength;
-    static int winHeight;
-    static int centerx;
-    static int centery;
-    static int hidex;
-    static int hidey;
-};
-int WindowConst::winLength = 392;
-int WindowConst::winHeight = 696;
-int WindowConst::hidex = -5000;
-int WindowConst::hidey = winHeight+5000;
-int WindowConst::centerx = winLength/2;
-int WindowConst::centery = winHeight/2;
+
 
 class Button:public Sprite{
     protected:
@@ -158,7 +169,7 @@ class ArrayofBlocks {
     ArrayofBlocks(float initialposx,float initialposy,float w,int n,float spacing):InitialX(initialposx),InitialY(initialposy),Width(w),N(n),Spacing(spacing){
         for(int i=0;i<5;i++){
             blocks[i] = RectangleShape(Vector2f(Length,w));
-            // blocks[i].setOrigin(Length/2,w/2);
+            blocks[i].setOrigin(Length/2,w/2);
         }
         
         blocks[0].setPosition(InitialX,InitialY);
@@ -216,76 +227,10 @@ class ArrayofBlocks {
     
 };
 
-class ObstacleCircle {
-private:
-    int x;
-    int y;
-    int radius;
-    Color colors[4];
-    int position;
-
-public:
-    ObstacleCircle(int x, int y, int radius) : x(x), y(y), radius(radius), position(0) {
-        colors[0] = sf::Color::Red;
-        colors[1] = sf::Color::Green;
-        colors[2] = sf::Color::Blue;
-        colors[3] = sf::Color::Yellow;
-    }
-
-    void draw(sf::RenderWindow& window) {
-        position = (position + 1) % 4;
-        for (int i = 0; i < 4; ++i) {
-            CircleShape shape(radius, 60);
-            shape.setFillColor(colors[(i + position) % 4]);
-            shape.setPosition(x - radius, y - radius);
-            shape.setOutlineThickness(2);
-            shape.setOutlineColor(sf::Color::Black);
-            window.draw(shape);
-        }
-    }
-};
-
-class Ball {
-private:
-    int x;
-    int y;
-    int radius;
-    sf::Color colors[4];
-    int colorIndex;
-
-public:
-    Ball(int x, int y, int radius) : x(x), y(y), radius(radius), colorIndex(0) {
-        colors[0] = sf::Color::Red;
-        colors[1] = sf::Color::Green;
-        colors[2] = sf::Color::Blue;
-        colors[3] = sf::Color::Yellow;
-    }
-
-    void draw(sf::RenderWindow& window) {
-        CircleShape shape(radius);
-        shape.setFillColor(colors[colorIndex]);
-        shape.setPosition(x - radius, y - radius);
-        window.draw(shape);
-    }
-
-    void moveAbove(sf::RenderWindow& window) {
-        int maxY = y - 305;
-        while (y > maxY) {
-            y -= 1;
-            draw(window);
-            window.display();
-            sf::sleep(sf::milliseconds(10));
-        }
-    }
-
-    inline int getColorIndex() {
-        return colorIndex;
-    }
-};
 
 int main()
 {   
-    srand(time(NULL)); //j
+
     // Initializing Objects
 
     float obstacleSpeed = 9;
@@ -295,14 +240,10 @@ int main()
     ArrayofBlocks obs2(WindowConst::hidex,WindowConst::hidey,15,5,1.075);
 
     //s
-    Pentagon pentagon(50.0f);
-    Rectangle rectangle(100.0f, 80.0f); 
+    Pentagon pentagon(100,WindowConst::hidex,WindowConst::hidey);
+    Rectangle rectangle(50,70,WindowConst::hidex,WindowConst::hidey); 
 
-    //j
-    ObstacleCircle obstacle(500, 550, 80);
-    Ball ball(500, 750, 30);
 
-    bool ballMoved = false;
 
     // Main Loop
     while (window.isOpen())
@@ -328,7 +269,8 @@ int main()
 
                     obs1.changeInitialPos(-15,WindowConst::centery);
                     obs2.changeInitialPos(0,WindowConst::winHeight/4);
-                    
+                    pentagon.changePosition(WindowConst::centerx,10);
+                    rectangle.changePosition(WindowConst::centerx,600);
                 }
 
 
@@ -342,11 +284,6 @@ int main()
     pentagon.updateColor();
     rectangle.updateColor();
     
-    //j
-    if (!ballMoved) {
-            ballMoved = true;
-            ball.moveAbove(window);
-        }
 
     window.clear(Color::Black);
     
@@ -361,9 +298,6 @@ int main()
     window.draw(pentagon);
     window.draw(rectangle);
 
-    //j
-    ball.draw(window);
-    obstacle.draw(window);
 
 
     window.display();   
