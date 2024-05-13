@@ -10,24 +10,11 @@
 #include <cstdlib>
 #include <vector>
 #include <variant>
+#include <fstream>
 
 
 using namespace sf;
 using namespace std;
-const float colorChangeTime = 2.0f;
-
-class Drawable {
-public:
-    virtual void draw(RenderTarget& target, RenderStates states) const = 0;
-};
-
-class Object {
-public:
-    virtual void changeInitialPosition(float posx, float posy) = 0;
-    virtual Vector2f GetPosition() const = 0;
-};
-
-
 
 class GameConst {
     public:
@@ -145,19 +132,21 @@ class HomePage:public Sprite{
 };
 
 
-class Object: virtual public Drawable {
+class Object: virtual public Sprite {
     public:
 
     virtual void changeInitialPosition(float posx,float posy) =0;
 
     virtual void updateColor()  = 0;
 
+    virtual Color getColor() =0;
+
 };
 
 
 
 template<typename T>
-class Ball : public Drawable {
+class Ball : public Sprite {
 private:
     Vector2f initialPosition;
     Color ballColor;
@@ -205,8 +194,9 @@ public:
             downSpeed += gravity*dt;
             shape.move(0,downSpeed);
         }
-        
     }
+
+    Color getColor(){return shape.getFillColor();}
 
     void draw(RenderTarget& target, RenderStates states) const override {
         target.draw(shape, states);
@@ -223,7 +213,7 @@ public:
     void SetPosition(float posx ,float posy)const{shape.setPosition(posx,posy);}
 };
 
-class ArrayofBlocks{
+class ArrayofBlocks: public Sprite {
     
     const int N;
     float Length = GameConst::winLength/N;
@@ -302,16 +292,17 @@ class ArrayofBlocks{
 
     void SetPosition(float posx ,float posy){blocks[0].setPosition(posx,posy);}
     
+    
 };
 
-class Pentagon : virtual public Drawable, public Object {
+class Pentagon : virtual public Sprite,public Object {
 private:
     ConvexShape pentagonShape;
     Color currentColor;
     Clock colorChangeClock;
 
 public:
-    Pentagon(float size, float initialX, float initialY) {
+    Pentagon(float size,float initialX,float initialY) {
         pentagonShape.setPointCount(5);
         pentagonShape.setPoint(0, Vector2f(0, -size));
         pentagonShape.setPoint(1, Vector2f(size * 0.9511f, -size * 0.3090f));
@@ -319,20 +310,23 @@ public:
         pentagonShape.setPoint(3, Vector2f(-size * 0.5877f, size * 0.8090f));
         pentagonShape.setPoint(4, Vector2f(-size * 0.9511f, -size * 0.3090f));
         pentagonShape.setFillColor(Color::Transparent);
-        pentagonShape.setOutlineThickness(2.0f);
-        pentagonShape.setOutlineColor(Color::Green);
-        Vector2f center((pentagonShape.getPoint(0).x + pentagonShape.getPoint(2).x) / 2.0f,
-                        (pentagonShape.getPoint(1).y + pentagonShape.getPoint(3).y) / 2.0f);
+        pentagonShape.setOutlineThickness(7);
+        pentagonShape.setOutlineColor(Color::Green); 
+        Vector2f center(
+            (pentagonShape.getPoint(0).x + pentagonShape.getPoint(2).x) / 2.0f,
+            (pentagonShape.getPoint(1).y + pentagonShape.getPoint(3).y) / 2.0f
+        );
+        // Set the origin to the center
         pentagonShape.setOrigin(center);
-        pentagonShape.setPosition(initialX, initialY);
-        currentColor = Color::Yellow;
+        pentagonShape.setPosition(initialX, initialY); 
+        currentColor = Color::Red;
     }
 
     void updateColor() {
-        if (colorChangeClock.getElapsedTime().asSeconds() >= colorChangeTime) {
+        if (colorChangeClock.getElapsedTime().asSeconds() >= GameConst::colorChangeTime) {
             currentColor = Color(rand() % 256, rand() % 256, rand() % 256);
             pentagonShape.setOutlineColor(currentColor);
-            colorChangeClock.restart();
+            colorChangeClock.restart(); 
         }
     }
 
@@ -340,48 +334,18 @@ public:
         target.draw(pentagonShape, states);
     }
 
-    void changeInitialPosition(float posx, float posy) override {
-        pentagonShape.setPosition(posx, posy);
+    void changeInitialPosition(float posx,float posy){
+        pentagonShape.setPosition(posx,posy);
     }
 
-    Vector2f GetPosition() const override { return pentagonShape.getPosition(); }
+    Vector2f GetPosition()const{return pentagonShape.getPosition();}
+
+    void SetPosition(float posx ,float posy){pentagonShape.setPosition(posx,posy);}
+
+    Color getColor(){return pentagonShape.getOutlineColor();}
 };
-class Rectangle : virtual public Drawable, public Object {
-private:
-    RectangleShape rectangleShape;
-    Color currentColor;
-    Clock colorChangeClock;
 
-public:
-    Rectangle(float width, float height, float initialX, float initialY) {
-        rectangleShape.setSize(Vector2f(width, height));
-        rectangleShape.setFillColor(Color::Transparent);
-        rectangleShape.setOutlineThickness(2.0f);
-        rectangleShape.setOutlineColor(Color::Red);
-        rectangleShape.setOrigin(width / 2.0f, height / 2.0f);
-        rectangleShape.setPosition(initialX, initialY);
-        currentColor = Color::Blue;
-    }
-
-    void updateColor() {
-        if (colorChangeClock.getElapsedTime().asSeconds() >= colorChangeTime) {
-            currentColor = Color(rand() % 256, rand() % 256, rand() % 256);
-            rectangleShape.setOutlineColor(currentColor);
-            colorChangeClock.restart();
-        }
-    }
-
-    void draw(RenderTarget& target, RenderStates states) const override {
-        target.draw(rectangleShape, states);
-    }
-
-    void changeInitialPosition(float posx, float posy) override {
-        rectangleShape.setPosition(posx, posy);
-    }
-
-    Vector2f GetPosition() const override { return rectangleShape.getPosition(); }
-};
-class ColoredCircle : public Drawable {
+class ColoredCircle : virtual public Sprite,public Object {
 private:
     CircleShape circleShape;
     Color currentColor;
@@ -391,7 +355,7 @@ public:
     ColoredCircle(float radius, const Vector2f& position) {
         circleShape.setRadius(radius);
         circleShape.setFillColor(Color::Transparent);
-        circleShape.setOutlineThickness(2.0f);
+        circleShape.setOutlineThickness(7);
         circleShape.setOutlineColor(Color::Red);
         circleShape.setOrigin(radius, radius);
         circleShape.setPosition(position);
@@ -399,7 +363,7 @@ public:
     }
 
     void updateColor() {
-        if (colorChangeClock.getElapsedTime().asSeconds() >= colorChangeTime) {
+        if (colorChangeClock.getElapsedTime().asSeconds() >= GameConst::colorChangeTime) {
             currentColor = Color(rand() % 256, rand() % 256, rand() % 256);
             circleShape.setOutlineColor(currentColor);
             colorChangeClock.restart();
@@ -413,7 +377,14 @@ public:
     void setPosition(const Vector2f& position) {
         circleShape.setPosition(position);
     }
+
+    void changeInitialPosition(float posx,float posy){
+        circleShape.setPosition(posx,posy);
+    }
+
+    Color getColor(){return circleShape.getOutlineColor();}
 };
+
 class Score {
 private:
     int currentScore;
@@ -471,40 +442,20 @@ public:
     }
 };
 
-// void hideObjects(ArrayofBlocks randomline1,ArrayofBlocks randomline2,ArrayofBlocks singleline1,ArrayofBlocks singleline2,Pentagon pentagon,Rectangle rectangle){
-//     using Variant = variant<Ball<CircleShape>,Ball<RectangleShape>,ArrayofBlocks,Pentagon,Rectangle>;
-//     vector<Variant> objects;
 
-//     objects.push_back(randomline1);
-//     objects.push_back(randomline2);
-//     objects.push_back(singleline1);
-//     objects.push_back(singleline2);
-//     objects.push_back(pentagon);
-//     objects.push_back(rectangle);
-
-//     for (const auto &obj : objects) {
-//         // Use std::visit to handle different types
-//         visit([](const auto& val) {
-
-//             if(val.GetPosition() != Vector2f(GameConst::hidex,GameConst::hidey)){
-//                 val.SetPosition(GameConst::hidex,GameConst::hidey);
-//             }
-
-//         }, obj);
-//     }
-
+// bool checkCollision(const Ball<CircleShape>& ball, const Pentagon& pentagon) {
+//     FloatRect ballBounds = ball.getGlobalBounds();
+//     FloatRect pentagonBounds = pentagon.getGlobalBounds();
+    
+//     return ballBounds.intersects(pentagonBounds);
 // }
-
-
 
 
 
 
 int main()
 {   
-    
-   
-    // Ball<void>* shape = nullptr;
+
     
     int pageCount =0;
     string Level = "";
@@ -516,6 +467,14 @@ int main()
     
     RenderWindow window(VideoMode(GameConst::winLength,GameConst::winHeight),"Color Switch",Style::Close | Style::Titlebar);
     
+    Score score;
+    Font font;
+    if (!font.loadFromFile("arial.ttf")) {
+        cerr << "Failed to load font file!" << endl;
+        return EXIT_FAILURE;
+    }
+
+
     // Create a Ball with initialshape, red color, position, origin at (50, 50)
     CircleShape circle(15);
     RectangleShape square(Vector2f(25,25));
@@ -530,9 +489,9 @@ int main()
     ArrayofBlocks randomline2(GameConst::hidex,GameConst::hidey,15,5,1.075);
     ArrayofBlocks singleline2(GameConst::hidex,GameConst::hidey,15,5,1.075);
     //s
-    Pentagon pentagon(100,GameConst::hidex,GameConst::hidey);
-    Rectangle rectangle(GameConst::winLength-100,100,GameConst::hidex,GameConst::hidey); 
-
+    Pentagon pentagon(75,GameConst::hidex,GameConst::hidey);
+    //Rectangle rectangle(GameConst::winLength-100,100,GameConst::hidex,GameConst::hidey); 
+    ColoredCircle coloredCircle(70, Vector2f(GameConst::hidex,GameConst::hidey));
     float dt = clk.getElapsedTime().asSeconds()/1800;
 
     
@@ -552,6 +511,10 @@ int main()
             if (evnt.type == Event::MouseButtonPressed && evnt.mouseButton.button == Mouse::Left || evnt.type == Event::KeyPressed && evnt.key.code == Keyboard::Enter) {
                 
                 Vector2i currentMousePos = Mouse::getPosition(window);
+                Vector2f currentCircleBallPos = circleBall.GetPosition();
+                Vector2f currentSquareBallPos = squareBall.GetPosition();
+                
+
                 
                 if (home.circlebutton.getGlobalBounds().contains(Vector2f(currentMousePos))) {
                     ballShape = "circle";
@@ -568,8 +531,8 @@ int main()
                     
                     home.hideHome(home);
 
-                    if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);}
-                    else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);}
+                    if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-10);}
+                    else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-10);}
                     
     
                     
@@ -583,14 +546,18 @@ int main()
                     
                     home.hideHome(home);
                     
-                    if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);}
-                    else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);}
+                    if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-10);}
+                    else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-10);}
                     
 
                     Level = "hard";
                     pentagon.changeInitialPosition(GameConst::centerx,GameConst::winHeight/4);
-                    rectangle.changeInitialPosition(GameConst::centerx-30,GameConst::winHeight*3/4-55);///
+                    coloredCircle.changeInitialPosition(GameConst::centerx-30,GameConst::winHeight*3/4-55);///
                 }
+
+                // if( (circleBall.getColor() != pentagon.getColor() && pentagon.getGlobalBounds().contains(currentCircleBallPos)) || ((squareBall.getColor() != pentagon.getColor() && pentagon.getGlobalBounds().contains(currentSquareBallPos))) ){
+                //     window.close();
+                // }
 
             }
 
@@ -621,19 +588,19 @@ int main()
                     if(pageCount ==0){
                     pentagon.changeInitialPosition(GameConst::hidex,GameConst::hidey);
 
-                    if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);}
-                    else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);}
+                    if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-10);}
+                    else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-10);}
                      ///
                     
-                    rectangle.changeInitialPosition(GameConst::centerx-30,GameConst::centery);
+                    coloredCircle.changeInitialPosition(GameConst::centerx-30,GameConst::centery);
                     pageCount++;
                         
                     }
                     else if(pageCount ==1){
-                        rectangle.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+                        coloredCircle.changeInitialPosition(GameConst::hidex,GameConst::hidey);
 
-                        if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);}
-                        else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);} ///
+                        if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-10);}
+                        else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-10);} ///
                         randomline1.changeInitialPosition(0,GameConst::centery-100);
                         singleline1.changeInitialPosition(0,GameConst::centery+100);
                         pageCount++;
@@ -659,21 +626,22 @@ int main()
                     if(pageCount ==0){
                     pentagon.changeInitialPosition(GameConst::hidex,GameConst::hidey);
 
-                    if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);}
-                    else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);} ///
+                    if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-10);}
+                    else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-10);} ///
                     
-                    rectangle.changeInitialPosition(GameConst::centerx-30,GameConst::winHeight/2 - 50);
+                    coloredCircle.changeInitialPosition(GameConst::centerx-30,GameConst::winHeight/2 - 70);
+                    
                     randomline1.changeInitialPosition(0,GameConst::winHeight*3/4 - 30);
-                    singleline1.changeInitialPosition(0,GameConst::winHeight/4 - 80);
+                    singleline1.changeInitialPosition(0,GameConst::winHeight/4- 110);
                     
                     pageCount++;
                     
                     }
                     else if(pageCount ==1){
-                        rectangle.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+                        coloredCircle.changeInitialPosition(GameConst::hidex,GameConst::hidey);
 
-                        if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);}
-                        else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);} ///
+                        if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-10);}
+                        else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-10);} ///
                         
                         randomline1.changeInitialPosition(0,GameConst::winHeight*3/4 - 30);
                         singleline1.changeInitialPosition(0,GameConst::winHeight/2 - 30);
@@ -700,8 +668,11 @@ int main()
         }
 
     //s
-    pentagon.updateColor();
-    rectangle.updateColor();
+    if (clk.getElapsedTime().asSeconds() >= 0.1f) {
+        pentagon.updateColor();
+        coloredCircle.updateColor();
+        clk.restart();
+    }
     
     if(ballShape == "circle"){circleBall.moveBall(dt,clk);}
     else if(ballShape == "square"){squareBall.moveBall(dt,clk);}
@@ -723,9 +694,9 @@ int main()
 
     //s
     window.draw(pentagon);
-    window.draw(rectangle);
+    window.draw(coloredCircle);
 
-
+    score.displayScore(window, font);
 
     window.display();   
 

@@ -3,16 +3,16 @@
 #include <fstream>
 #include <ctime>
 #include <cstdlib>
-
+//g++ -c sadiqfinal.cpp -I"C:\Users\Abdul Rahman\Documents\GitHub\ColourSwitchGame\include";g++ main-combined.o -o main-combined -L"C:\Users\Abdul Rahman\Documents\GitHub\ColourSwitchGame\lib" -lsfml-graphics -lsfml-window -lsfml-system
 using namespace sf;
 using namespace std;
 
 const float colorChangeTime = 2.0f;  // Change color every 2 seconds
 
-class Drawable {
-public:
-    virtual void draw(RenderTarget& target, RenderStates states) const = 0;
-};
+// class Drawable {
+// public:
+//     virtual void draw(RenderTarget& target, RenderStates states) const = 0;
+// };
 
 class Object {
 public:
@@ -99,7 +99,7 @@ public:
     Vector2f GetPosition() const override { return pentagonShape.getPosition(); }
 };
 
-class ColoredCircle : public Drawable {
+class ColoredCircle : virtual public Sprite {
 private:
     CircleShape circleShape;
     Color currentColor;
