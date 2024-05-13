@@ -405,8 +405,9 @@ public:
 
 int main()
 {   
-
     
+   
+    // Ball<void>* shape = nullptr;
     
     int pageCount =0;
     string Level = "";
@@ -420,7 +421,7 @@ int main()
     
     // Create a Ball with initialshape, red color, position, origin at (50, 50)
     CircleShape circle(15);
-    RectangleShape square(Vector2f(15,15));
+    RectangleShape square(Vector2f(25,25));
     Ball<CircleShape> circleBall(circle, Color::Red, {GameConst::hidex,GameConst::hidey}, {50, 50});
     Ball<RectangleShape> squareBall(square, Color::Red, {GameConst::hidex,GameConst::hidey}, {50, 50});
     
@@ -455,8 +456,12 @@ int main()
                 
                 Vector2i currentMousePos = Mouse::getPosition(window);
                 
-                if (home.circlebutton.getGlobalBounds().contains(Vector2f(currentMousePos))) {ballShape = "circle";}
-                else if(home.squarebutton.getGlobalBounds().contains(Vector2f(currentMousePos))) {ballShape = "square";}
+                if (home.circlebutton.getGlobalBounds().contains(Vector2f(currentMousePos))) {
+                    ballShape = "circle";
+                }
+                else if(home.squarebutton.getGlobalBounds().contains(Vector2f(currentMousePos))) {
+                    ballShape = "square";
+                }
                 
                if(home.homebutton.getGlobalBounds().contains(Vector2f(currentMousePos))){
 
@@ -466,7 +471,10 @@ int main()
                     
                     home.hideHome(home);
 
-                    circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30); ///
+                    if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);}
+                    else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);}
+                    
+    
                     
 
                     Level = "easy";
@@ -478,7 +486,9 @@ int main()
                     
                     home.hideHome(home);
                     
-                    circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30); ///
+                    if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);}
+                    else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);}
+                    
 
                     Level = "hard";
                     pentagon.changeInitialPosition(GameConst::centerx,GameConst::winHeight/4);
@@ -487,50 +497,56 @@ int main()
 
             }
 
-            if (((evnt.type == Event::MouseButtonPressed && evnt.mouseButton.button == Mouse::Left) ||
-                (evnt.type == Event::KeyPressed && evnt.key.code == Keyboard::Space)) &&
-                home.getPosition().x == GameConst::hidex){
-                        circleBall.setIsJumping(true); ///
-                        circleBall.moveBall(dt,clk); ///
-                }
-            circleBall.setIsJumping(false); ///
+            if(ballShape=="circle"){
+                if (((evnt.type == Event::MouseButtonPressed && evnt.mouseButton.button == Mouse::Left) ||
+                    (evnt.type == Event::KeyPressed && evnt.key.code == Keyboard::Space)) &&
+                    home.getPosition().x == GameConst::hidex){
+                            circleBall.setIsJumping(true); ///
+                            circleBall.moveBall(dt,clk); ///
+                    }
+                circleBall.setIsJumping(false); ///
+            }
+            else if(ballShape=="square"){
+                if (((evnt.type == Event::MouseButtonPressed && evnt.mouseButton.button == Mouse::Left) ||
+                    (evnt.type == Event::KeyPressed && evnt.key.code == Keyboard::Space)) &&
+                    home.getPosition().x == GameConst::hidex){
+                            squareBall.setIsJumping(true); ///
+                            squareBall.moveBall(dt,clk); ///
+                    }
+                squareBall.setIsJumping(false); ///
+            }
 
-
-            if(circleBall.GetPosition().y <= 0){ ///
+            if(circleBall.GetPosition().y <= 0 || squareBall.GetPosition().y <= 0){ ///
 
                 if(Level == "easy"){
                     
 
                     if(pageCount ==0){
                     pentagon.changeInitialPosition(GameConst::hidex,GameConst::hidey);
-                    circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30); ///
+
+                    if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);}
+                    else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);}
+                     ///
+                    
                     rectangle.changeInitialPosition(GameConst::centerx-30,GameConst::centery);
                     pageCount++;
-                        // if(circleBall.GetPosition().y >= GameConst::winHeight){
-                        //     pageCount =0;
-                        //     home.gameOver(home);
-                        //     circleBall.changeInitialPosition(GameConst::hidex,GameConst::hidey); ///
-                        //     rectangle.changeInitialPosition(GameConst::hidex,GameConst::hidey);
-                        // }
+                        
                     }
                     else if(pageCount ==1){
                         rectangle.changeInitialPosition(GameConst::hidex,GameConst::hidey);
-                        circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30); ///
+
+                        if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);}
+                        else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);} ///
                         randomline1.changeInitialPosition(0,GameConst::centery-100);
                         singleline1.changeInitialPosition(0,GameConst::centery+100);
                         pageCount++;
-                        // if(circleBall.GetPosition().y >= GameConst::winHeight){
-                        //     pageCount =0;
-                        //     home.gameOver(home);
-                        //     circleBall.changeInitialPosition(GameConst::hidex,GameConst::hidey); ///
-                        //     randomline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
-                        //     singleline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
-                        // }
+                        
                     }
 
                      // Complete Easy Level
                     else if(pageCount==2){
-                        circleBall.changeInitialPosition(GameConst::hidex,GameConst::hidey); ///
+                        if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::hidex,GameConst::hidey);}
+                        else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::hidex,GameConst::hidey);} ///
                         randomline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
                         singleline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
                         pageCount =0;
@@ -546,44 +562,33 @@ int main()
                     if(pageCount ==0){
                     pentagon.changeInitialPosition(GameConst::hidex,GameConst::hidey);
 
-                    circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30); ///
+                    if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);}
+                    else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);} ///
                     
                     rectangle.changeInitialPosition(GameConst::centerx-30,GameConst::winHeight/2 - 50);
                     randomline1.changeInitialPosition(0,GameConst::winHeight*3/4 - 30);
                     singleline1.changeInitialPosition(0,GameConst::winHeight/4 - 80);
                     
                     pageCount++;
-                    // if(circleBall.GetPosition().y >= GameConst::winHeight){
-                    //         pageCount =0;
-                    //         home.gameOver(home);
-                    //         circleBall.changeInitialPosition(GameConst::hidex,GameConst::hidey); ///
-                    //         rectangle.changeInitialPosition(GameConst::hidex,GameConst::hidey);
-                    //         randomline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
-                    //         singleline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
-                    //     }
+                    
                     }
                     else if(pageCount ==1){
                         rectangle.changeInitialPosition(GameConst::hidex,GameConst::hidey);
 
-                        circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30); ///
+                        if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);}
+                        else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30);} ///
                         
                         randomline1.changeInitialPosition(0,GameConst::winHeight*3/4 - 30);
                         singleline1.changeInitialPosition(0,GameConst::winHeight/2 - 30);
                         randomline2.changeInitialPosition(0,GameConst::winHeight/4 - 30);
                         pageCount++;
-                        // if(circleBall.GetPosition().y >= GameConst::winHeight){
-                        //     pageCount =0;
-                        //     home.gameOver(home);
-                        //     circleBall.changeInitialPosition(GameConst::hidex,GameConst::hidey); ///
-                        //     randomline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
-                        //     singleline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
-                        //     randomline2.changeInitialPosition(GameConst::hidex,GameConst::hidey);
-                        // }
+                        
                     }
 
                     // Complete Hard Level
                     else if(pageCount==2){
-                        circleBall.changeInitialPosition(GameConst::hidex,GameConst::hidey); ///
+                        if(ballShape == "circle"){circleBall.changeInitialPosition(GameConst::hidex,GameConst::hidey);}
+                        else if(ballShape == "square"){squareBall.changeInitialPosition(GameConst::hidex,GameConst::hidey);} ///
                         
                         randomline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
                         singleline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
@@ -594,22 +599,16 @@ int main()
                 }
             }
             
-            // if(Level == "easy"){
-            //     if(pageCount==0 && circleBall.GetPosition().y >= GameConst::winHeight){
-            //                     pageCount =0;
-            //                     home.gameOver(home);
-            //                     circleBall.changeInitialPosition(GameConst::hidex,GameConst::hidey); ///
-            //                     rectangle.changeInitialPosition(GameConst::hidex,GameConst::hidey);
-            //                 }
-
-            //     }
+            
         }
 
     //s
     pentagon.updateColor();
     rectangle.updateColor();
     
-    circleBall.moveBall(dt,clk);
+    if(ballShape == "circle"){circleBall.moveBall(dt,clk);}
+    else if(ballShape == "square"){squareBall.moveBall(dt,clk);}
+    
 
     window.clear(Color::Black);
     
@@ -622,7 +621,8 @@ int main()
     randomline2.drawBasicBlocks(window);
     singleline2.drawMonoBlocks(window);
 
-    window.draw(circleBall); ///
+    if(ballShape == "circle"){window.draw(circleBall);}
+    else if(ballShape == "square"){window.draw(squareBall);} ///
 
     //s
     window.draw(pentagon);
