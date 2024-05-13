@@ -8,6 +8,8 @@
 #include <iostream>
 #include <cstring>
 #include <cstdlib>
+#include <vector>
+#include <variant>
 
 
 using namespace sf;
@@ -17,22 +19,32 @@ class GameConst {
     public:
     static float winLength;
     static float winHeight;
-    static float  centerx;
+    static float centerx;
     static float centery;
     static float hidex;
     static float hidey;
     static float colorChangeTime;
     static float obstacleSpeed;
+    static float gravity;
+    static float ballUpSpeed;
+
+    virtual void gameConst() = 0;
 
 };
 float GameConst::winLength = 392;
 float GameConst::winHeight = 696;
 float GameConst::hidex = -5000;
 float GameConst::hidey = winHeight+5000;
-float GameConst::centerx = winLength/2;
+float GameConst::centerx = winLength/2 + 25;
 float GameConst::centery = winHeight/2;
 float GameConst::colorChangeTime = 2.0f;
 float GameConst::obstacleSpeed = 9;
+float GameConst::gravity = 20;
+float GameConst::ballUpSpeed = -70;
+
+
+
+
 
 
 class Button:public Sprite{
@@ -45,7 +57,7 @@ class Button:public Sprite{
 
         buttontexture.loadFromFile(texturefilepath);
         setTexture(buttontexture);
-        setPosition(196,348);
+        setPosition(Vector2f(196,348));
         setOrigin(29,29);
         move(offsetx,offsety);
         
@@ -60,18 +72,25 @@ class Button:public Sprite{
 
 class HomePage:public Sprite{
     Texture hometexture;
+    Texture gameovertexture;
+    Texture notexture;
+    
     public:
-    Button easybutton = Button("Sprites\\easy.png",-70,-120);
-    Button hardbutton = Button("Sprites\\hard.png",50,-120);
-    Button editbutton = Button("Sprites\\edit.png",-10,-60);
+    Button easybutton = Button("Sprites\\easy.png",-65,-170);
+    Button hardbutton = Button("Sprites\\hard.png",55,-169);
+    Button circlebutton = Button("Sprites\\circle.png",-65,-30);
+    Button squarebutton = Button("Sprites\\square.png",55,-29);
+    Button homebutton = Button("Sprites\\homebutton.png",GameConst::hidex,GameConst::hidex);
     // TO DO:: Add ScoreBoard Object which shows highscore and/or top three scores
     
 
     
-    
+    public:
     HomePage(){
         
         hometexture.loadFromFile("Sprites\\home.png");
+        gameovertexture.loadFromFile("Sprites\\GameOver.png");
+        notexture.loadFromFile("Sprites\\none.png");
         setTexture(hometexture);
     }
 
@@ -79,12 +98,49 @@ class HomePage:public Sprite{
         win.draw(home);
         easybutton.drawButton(easybutton,win);
         hardbutton.drawButton(hardbutton,win);
-        editbutton.drawButton(editbutton,win);
+        circlebutton.drawButton(circlebutton,win);
+        squarebutton.drawButton(squarebutton,win);
+        homebutton.drawButton(homebutton,win);
     }
 
+    void hideHome(HomePage &home){
+        
+        home.setPosition(Vector2f(GameConst::hidex,0));
+        home.easybutton.move(GameConst::hidex,0);
+        home.circlebutton.move(GameConst::hidex,0);
+        home.squarebutton.move(GameConst::hidex,0);
+        home.hardbutton.move(GameConst::hidex,0);
+    }
+
+    void showHome(HomePage &home){
+        setTexture(hometexture);
+        home.setPosition(Vector2f(0,0));
+        homebutton.move(GameConst::hidex,0);
+        //196,348
+        home.easybutton.setPosition(Vector2f(131,179));
+        home.circlebutton.setPosition(Vector2f(131,319));
+        home.squarebutton.setPosition(Vector2f(251,319));
+        home.hardbutton.setPosition(Vector2f(251,179));
+    }
     
+    void gameOver(HomePage &home){
+        setTexture(gameovertexture);
+        home.setPosition(Vector2f(0,0));
+        homebutton.setPosition(Vector2f(165,160));
+    }
+};
+
+
+class Object: virtual public Drawable {
+    public:
+
+    virtual void changeInitialPosition(float posx,float posy) =0;
+
+    virtual void updateColor()  = 0;
 
 };
+
+
 
 template<typename T>
 class Ball : public Drawable {
@@ -92,13 +148,18 @@ private:
     Vector2f initialPosition;
     Color ballColor;
     T shape;
-    float upSpeed = -200;
+    float upSpeed = GameConst::ballUpSpeed;
     float downSpeed = 0.0;
     float gravity = 0.0;
+    bool isJumping = false;
+    
+public:
+
+    bool getIsJumping(){return isJumping;}
+    void setIsJumping(bool value){isJumping = value;}
+    
     
 
-public:
-    bool isJumping = false;
     Ball(const T& initialShape, const Color& fillColor = Color::White, const Vector2f& initialPos = {0, 0}, const Vector2f& initialOrigin = {0, 0}) : shape(initialShape) {
         initialPosition = initialPos;
         ballColor = fillColor;
@@ -111,13 +172,14 @@ public:
 
     // -ve up +ve down
 
-    void jumpBall(float dt,Clock clk){
+    float jumpBall(float dt,Clock clk){
         downSpeed=0;
         clk.restart();
-        gravity = 9.81;
+        gravity = GameConst::gravity;
         upSpeed += gravity*dt;
 
         shape.move(0,upSpeed);
+        return upSpeed;
     }
 
     void moveBall(float dt,Clock clk){
@@ -136,12 +198,18 @@ public:
         target.draw(shape, states);
     }
 
-    void changeInitialPosition(float posx,float posy){
+    void changeInitialPosition(float posx,float posy) {
         shape.setPosition(Vector2f(posx,posy));
     }
+
+    Vector2f GetPosition()const{
+        return shape.getPosition();
+    }
+
+    void SetPosition(float posx ,float posy)const{shape.setPosition(posx,posy);}
 };
 
-class ArrayofBlocks {
+class ArrayofBlocks{
     
     const int N;
     float Length = GameConst::winLength/N;
@@ -170,9 +238,12 @@ class ArrayofBlocks {
         
       
     }
-    void changeInitialPos(int x,int y){
-        InitialX = x;
-        InitialY = y;
+
+    
+
+    void changeInitialPosition(int posx,int posy){
+        InitialX = posx;
+        InitialY = posy;
         blocks[0].setPosition(InitialX,InitialY);
         for(int i=0;i<4;i++){
             blocks[i+1].setPosition(blocks[i].getPosition().x+(Spacing*Length),blocks[i].getPosition().y);
@@ -213,10 +284,13 @@ class ArrayofBlocks {
 
     }
 
+    Vector2f GetPosition()const{return blocks[0].getPosition();}
+
+    void SetPosition(float posx ,float posy){blocks[0].setPosition(posx,posy);}
     
 };
 
-class Pentagon : public Drawable {
+class Pentagon : virtual public Drawable,public Object {
 private:
     ConvexShape pentagonShape;
     Color currentColor;
@@ -231,7 +305,12 @@ public:
         pentagonShape.setPoint(3, Vector2f(-size * 0.5877f, size * 0.8090f));
         pentagonShape.setPoint(4, Vector2f(-size * 0.9511f, -size * 0.3090f));
         pentagonShape.setFillColor(Color::Red); 
-        pentagonShape.setOrigin(0, -size); 
+        Vector2f center(
+            (pentagonShape.getPoint(0).x + pentagonShape.getPoint(2).x) / 2.0f,
+            (pentagonShape.getPoint(1).y + pentagonShape.getPoint(3).y) / 2.0f
+        );
+        // Set the origin to the center
+        pentagonShape.setOrigin(center);
         pentagonShape.setPosition(initialX, initialY); 
         currentColor = Color::Red;
     }
@@ -248,18 +327,24 @@ public:
         target.draw(pentagonShape, states);
     }
 
-    void changePosition(float posx,float posy){
+    void changeInitialPosition(float posx,float posy){
         pentagonShape.setPosition(posx,posy);
     }
+
+    Vector2f GetPosition()const{return pentagonShape.getPosition();}
+
+    void SetPosition(float posx ,float posy){pentagonShape.setPosition(posx,posy);}
 };
 
-class Rectangle : public Drawable {
+class Rectangle : virtual public Drawable,public Object{
 private:
     RectangleShape rectangleShape;
     Color currentColor;
     Clock colorChangeClock;
 
 public:
+    
+
     Rectangle(float width, float height,float initialX,float initialY) {
         rectangleShape.setSize(Vector2f(width, height));
         rectangleShape.setFillColor(Color::Blue); 
@@ -280,10 +365,38 @@ public:
         target.draw(rectangleShape, states);
     }
 
-    void changePosition(float posx,float posy){
+    void changeInitialPosition(float posx,float posy){
         rectangleShape.setPosition(posx,posy);
     }
+
+    Vector2f GetPosition()const{return rectangleShape.getPosition();}
+    // void SetPosition(Vector2f &newpos)const{rectangleShape.setPosition(newpos);}
 };
+
+
+// void hideObjects(ArrayofBlocks randomline1,ArrayofBlocks randomline2,ArrayofBlocks singleline1,ArrayofBlocks singleline2,Pentagon pentagon,Rectangle rectangle){
+//     using Variant = variant<Ball<CircleShape>,Ball<RectangleShape>,ArrayofBlocks,Pentagon,Rectangle>;
+//     vector<Variant> objects;
+
+//     objects.push_back(randomline1);
+//     objects.push_back(randomline2);
+//     objects.push_back(singleline1);
+//     objects.push_back(singleline2);
+//     objects.push_back(pentagon);
+//     objects.push_back(rectangle);
+
+//     for (const auto &obj : objects) {
+//         // Use std::visit to handle different types
+//         visit([](const auto& val) {
+
+//             if(val.GetPosition() != Vector2f(GameConst::hidex,GameConst::hidey)){
+//                 val.SetPosition(GameConst::hidex,GameConst::hidey);
+//             }
+
+//         }, obj);
+//     }
+
+// }
 
 
 
@@ -293,27 +406,40 @@ public:
 int main()
 {   
 
+    
+    
+    int pageCount =0;
+    string Level = "";
+    string ballShape = "";
+
     // Initializing Objects
     Clock clk;
     clk.restart();
     
     RenderWindow window(VideoMode(GameConst::winLength,GameConst::winHeight),"Color Switch",Style::Close | Style::Titlebar);
     
-    // Create an Ball with initial circle shape, red color, position (200, 300), origin at (50, 50), and radius 50
+    // Create a Ball with initialshape, red color, position, origin at (50, 50)
     CircleShape circle(15);
+    RectangleShape square(Vector2f(15,15));
     Ball<CircleShape> circleBall(circle, Color::Red, {GameConst::hidex,GameConst::hidey}, {50, 50});
+    Ball<RectangleShape> squareBall(square, Color::Red, {GameConst::hidex,GameConst::hidey}, {50, 50});
     
     HomePage home;
     
 
-    ArrayofBlocks obs1(GameConst::hidex,GameConst::hidey,15,5,1.075);
-    ArrayofBlocks obs2(GameConst::hidex,GameConst::hidey,15,5,1.075);
+    ArrayofBlocks randomline1(GameConst::hidex,GameConst::hidey,15,5,1.075);
+    ArrayofBlocks singleline1(GameConst::hidex,GameConst::hidey,15,5,1.075);
+    ArrayofBlocks randomline2(GameConst::hidex,GameConst::hidey,15,5,1.075);
+    ArrayofBlocks singleline2(GameConst::hidex,GameConst::hidey,15,5,1.075);
     //s
     Pentagon pentagon(100,GameConst::hidex,GameConst::hidey);
-    Rectangle rectangle(50,70,GameConst::hidex,GameConst::hidey); 
+    Rectangle rectangle(GameConst::winLength-100,100,GameConst::hidex,GameConst::hidey); 
+
+    float dt = clk.getElapsedTime().asSeconds()/1800;
+
+    
 
 
-    float dt = clk.getElapsedTime().asSeconds()/2500;
 
     // Main Loop
     while (window.isOpen())
@@ -329,30 +455,156 @@ int main()
                 
                 Vector2i currentMousePos = Mouse::getPosition(window);
                 
-                if (home.getGlobalBounds().contains(Vector2f(currentMousePos))) {
-                    
-                    home.move(GameConst::hidex,0);
-                    home.easybutton.move(GameConst::hidex,0);
-                    home.editbutton.move(GameConst::hidex,0);
-                    home.hardbutton.move(GameConst::hidex,0);
+                if (home.circlebutton.getGlobalBounds().contains(Vector2f(currentMousePos))) {ballShape = "circle";}
+                else if(home.squarebutton.getGlobalBounds().contains(Vector2f(currentMousePos))) {ballShape = "square";}
+                
+               if(home.homebutton.getGlobalBounds().contains(Vector2f(currentMousePos))){
 
-                    circleBall.changeInitialPosition(GameConst::centerx,GameConst::centery);
-                    obs1.changeInitialPos(-15,GameConst::centery);
-                    obs2.changeInitialPos(0,GameConst::winHeight/4);
-                    pentagon.changePosition(GameConst::centerx,10);
-                    rectangle.changePosition(GameConst::centerx,600);
+                    home.showHome(home);
+               }
+                if (home.easybutton.getGlobalBounds().contains(Vector2f(currentMousePos))) {
+                    
+                    home.hideHome(home);
+
+                    circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30); ///
+                    
+
+                    Level = "easy";
+                    pentagon.changeInitialPosition(GameConst::centerx,GameConst::centery);
+                    
                 }
+
+                if (home.hardbutton.getGlobalBounds().contains(Vector2f(currentMousePos))) {
+                    
+                    home.hideHome(home);
+                    
+                    circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30); ///
+
+                    Level = "hard";
+                    pentagon.changeInitialPosition(GameConst::centerx,GameConst::winHeight/4);
+                    rectangle.changeInitialPosition(GameConst::centerx-30,GameConst::winHeight*3/4-55);///
+                }
+
             }
 
             if (((evnt.type == Event::MouseButtonPressed && evnt.mouseButton.button == Mouse::Left) ||
                 (evnt.type == Event::KeyPressed && evnt.key.code == Keyboard::Space)) &&
                 home.getPosition().x == GameConst::hidex){
-                        circleBall.isJumping = true;
-                        circleBall.moveBall(dt,clk);
-                     }
-            circleBall.isJumping = false;
+                        circleBall.setIsJumping(true); ///
+                        circleBall.moveBall(dt,clk); ///
+                }
+            circleBall.setIsJumping(false); ///
 
+
+            if(circleBall.GetPosition().y <= 0){ ///
+
+                if(Level == "easy"){
+                    
+
+                    if(pageCount ==0){
+                    pentagon.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+                    circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30); ///
+                    rectangle.changeInitialPosition(GameConst::centerx-30,GameConst::centery);
+                    pageCount++;
+                        // if(circleBall.GetPosition().y >= GameConst::winHeight){
+                        //     pageCount =0;
+                        //     home.gameOver(home);
+                        //     circleBall.changeInitialPosition(GameConst::hidex,GameConst::hidey); ///
+                        //     rectangle.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+                        // }
+                    }
+                    else if(pageCount ==1){
+                        rectangle.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+                        circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30); ///
+                        randomline1.changeInitialPosition(0,GameConst::centery-100);
+                        singleline1.changeInitialPosition(0,GameConst::centery+100);
+                        pageCount++;
+                        // if(circleBall.GetPosition().y >= GameConst::winHeight){
+                        //     pageCount =0;
+                        //     home.gameOver(home);
+                        //     circleBall.changeInitialPosition(GameConst::hidex,GameConst::hidey); ///
+                        //     randomline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+                        //     singleline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+                        // }
+                    }
+
+                     // Complete Easy Level
+                    else if(pageCount==2){
+                        circleBall.changeInitialPosition(GameConst::hidex,GameConst::hidey); ///
+                        randomline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+                        singleline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+                        pageCount =0;
+                        home.gameOver(home);
+                        
+                    }
+                    
+                }
+
+                else if(Level == "hard"){
+
+
+                    if(pageCount ==0){
+                    pentagon.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+
+                    circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30); ///
+                    
+                    rectangle.changeInitialPosition(GameConst::centerx-30,GameConst::winHeight/2 - 50);
+                    randomline1.changeInitialPosition(0,GameConst::winHeight*3/4 - 30);
+                    singleline1.changeInitialPosition(0,GameConst::winHeight/4 - 80);
+                    
+                    pageCount++;
+                    // if(circleBall.GetPosition().y >= GameConst::winHeight){
+                    //         pageCount =0;
+                    //         home.gameOver(home);
+                    //         circleBall.changeInitialPosition(GameConst::hidex,GameConst::hidey); ///
+                    //         rectangle.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+                    //         randomline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+                    //         singleline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+                    //     }
+                    }
+                    else if(pageCount ==1){
+                        rectangle.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+
+                        circleBall.changeInitialPosition(GameConst::centerx,GameConst::winHeight-30); ///
+                        
+                        randomline1.changeInitialPosition(0,GameConst::winHeight*3/4 - 30);
+                        singleline1.changeInitialPosition(0,GameConst::winHeight/2 - 30);
+                        randomline2.changeInitialPosition(0,GameConst::winHeight/4 - 30);
+                        pageCount++;
+                        // if(circleBall.GetPosition().y >= GameConst::winHeight){
+                        //     pageCount =0;
+                        //     home.gameOver(home);
+                        //     circleBall.changeInitialPosition(GameConst::hidex,GameConst::hidey); ///
+                        //     randomline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+                        //     singleline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+                        //     randomline2.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+                        // }
+                    }
+
+                    // Complete Hard Level
+                    else if(pageCount==2){
+                        circleBall.changeInitialPosition(GameConst::hidex,GameConst::hidey); ///
+                        
+                        randomline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+                        singleline1.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+                        randomline2.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+                        pageCount =0;
+                        home.gameOver(home);
+                    }
+                }
+            }
+            
+            // if(Level == "easy"){
+            //     if(pageCount==0 && circleBall.GetPosition().y >= GameConst::winHeight){
+            //                     pageCount =0;
+            //                     home.gameOver(home);
+            //                     circleBall.changeInitialPosition(GameConst::hidex,GameConst::hidey); ///
+            //                     rectangle.changeInitialPosition(GameConst::hidex,GameConst::hidey);
+            //                 }
+
+            //     }
         }
+
     //s
     pentagon.updateColor();
     rectangle.updateColor();
@@ -365,10 +617,12 @@ int main()
 
     
     home.drawHome(home,window);
-    obs1.drawBasicBlocks(window);
-    obs2.drawMonoBlocks(window);
+    randomline1.drawBasicBlocks(window);
+    singleline1.drawMonoBlocks(window);
+    randomline2.drawBasicBlocks(window);
+    singleline2.drawMonoBlocks(window);
 
-    window.draw(circleBall);
+    window.draw(circleBall); ///
 
     //s
     window.draw(pentagon);
