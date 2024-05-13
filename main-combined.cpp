@@ -14,6 +14,20 @@
 
 using namespace sf;
 using namespace std;
+const float colorChangeTime = 2.0f;
+
+class Drawable {
+public:
+    virtual void draw(RenderTarget& target, RenderStates states) const = 0;
+};
+
+class Object {
+public:
+    virtual void changeInitialPosition(float posx, float posy) = 0;
+    virtual Vector2f GetPosition() const = 0;
+};
+
+
 
 class GameConst {
     public:
@@ -290,36 +304,35 @@ class ArrayofBlocks{
     
 };
 
-class Pentagon : virtual public Drawable,public Object {
+class Pentagon : virtual public Drawable, public Object {
 private:
     ConvexShape pentagonShape;
     Color currentColor;
     Clock colorChangeClock;
 
 public:
-    Pentagon(float size,float initialX,float initialY) {
+    Pentagon(float size, float initialX, float initialY) {
         pentagonShape.setPointCount(5);
         pentagonShape.setPoint(0, Vector2f(0, -size));
         pentagonShape.setPoint(1, Vector2f(size * 0.9511f, -size * 0.3090f));
         pentagonShape.setPoint(2, Vector2f(size * 0.5877f, size * 0.8090f));
         pentagonShape.setPoint(3, Vector2f(-size * 0.5877f, size * 0.8090f));
         pentagonShape.setPoint(4, Vector2f(-size * 0.9511f, -size * 0.3090f));
-        pentagonShape.setFillColor(Color::Red); 
-        Vector2f center(
-            (pentagonShape.getPoint(0).x + pentagonShape.getPoint(2).x) / 2.0f,
-            (pentagonShape.getPoint(1).y + pentagonShape.getPoint(3).y) / 2.0f
-        );
-        // Set the origin to the center
+        pentagonShape.setFillColor(Color::Transparent);
+        pentagonShape.setOutlineThickness(2.0f);
+        pentagonShape.setOutlineColor(Color::Green);
+        Vector2f center((pentagonShape.getPoint(0).x + pentagonShape.getPoint(2).x) / 2.0f,
+                        (pentagonShape.getPoint(1).y + pentagonShape.getPoint(3).y) / 2.0f);
         pentagonShape.setOrigin(center);
-        pentagonShape.setPosition(initialX, initialY); 
-        currentColor = Color::Red;
+        pentagonShape.setPosition(initialX, initialY);
+        currentColor = Color::Yellow;
     }
 
     void updateColor() {
-        if (colorChangeClock.getElapsedTime().asSeconds() >= GameConst::colorChangeTime) {
+        if (colorChangeClock.getElapsedTime().asSeconds() >= colorChangeTime) {
             currentColor = Color(rand() % 256, rand() % 256, rand() % 256);
-            pentagonShape.setFillColor(currentColor);
-            colorChangeClock.restart(); 
+            pentagonShape.setOutlineColor(currentColor);
+            colorChangeClock.restart();
         }
     }
 
@@ -327,37 +340,34 @@ public:
         target.draw(pentagonShape, states);
     }
 
-    void changeInitialPosition(float posx,float posy){
-        pentagonShape.setPosition(posx,posy);
+    void changeInitialPosition(float posx, float posy) override {
+        pentagonShape.setPosition(posx, posy);
     }
 
-    Vector2f GetPosition()const{return pentagonShape.getPosition();}
-
-    void SetPosition(float posx ,float posy){pentagonShape.setPosition(posx,posy);}
+    Vector2f GetPosition() const override { return pentagonShape.getPosition(); }
 };
-
-class Rectangle : virtual public Drawable,public Object{
+class Rectangle : virtual public Drawable, public Object {
 private:
     RectangleShape rectangleShape;
     Color currentColor;
     Clock colorChangeClock;
 
 public:
-    
-
-    Rectangle(float width, float height,float initialX,float initialY) {
+    Rectangle(float width, float height, float initialX, float initialY) {
         rectangleShape.setSize(Vector2f(width, height));
-        rectangleShape.setFillColor(Color::Blue); 
-        rectangleShape.setOrigin(width / 2.0f, height / 2.0f); 
-        rectangleShape.setPosition(initialX, initialY); 
+        rectangleShape.setFillColor(Color::Transparent);
+        rectangleShape.setOutlineThickness(2.0f);
+        rectangleShape.setOutlineColor(Color::Red);
+        rectangleShape.setOrigin(width / 2.0f, height / 2.0f);
+        rectangleShape.setPosition(initialX, initialY);
         currentColor = Color::Blue;
     }
 
     void updateColor() {
-        if (colorChangeClock.getElapsedTime().asSeconds() >= GameConst::colorChangeTime) {
+        if (colorChangeClock.getElapsedTime().asSeconds() >= colorChangeTime) {
             currentColor = Color(rand() % 256, rand() % 256, rand() % 256);
-            rectangleShape.setFillColor(currentColor);
-            colorChangeClock.restart(); 
+            rectangleShape.setOutlineColor(currentColor);
+            colorChangeClock.restart();
         }
     }
 
@@ -365,14 +375,101 @@ public:
         target.draw(rectangleShape, states);
     }
 
-    void changeInitialPosition(float posx,float posy){
-        rectangleShape.setPosition(posx,posy);
+    void changeInitialPosition(float posx, float posy) override {
+        rectangleShape.setPosition(posx, posy);
     }
 
-    Vector2f GetPosition()const{return rectangleShape.getPosition();}
-    // void SetPosition(Vector2f &newpos)const{rectangleShape.setPosition(newpos);}
+    Vector2f GetPosition() const override { return rectangleShape.getPosition(); }
 };
+class ColoredCircle : public Drawable {
+private:
+    CircleShape circleShape;
+    Color currentColor;
+    Clock colorChangeClock;
 
+public:
+    ColoredCircle(float radius, const Vector2f& position) {
+        circleShape.setRadius(radius);
+        circleShape.setFillColor(Color::Transparent);
+        circleShape.setOutlineThickness(2.0f);
+        circleShape.setOutlineColor(Color::Red);
+        circleShape.setOrigin(radius, radius);
+        circleShape.setPosition(position);
+        currentColor = Color::Blue;
+    }
+
+    void updateColor() {
+        if (colorChangeClock.getElapsedTime().asSeconds() >= colorChangeTime) {
+            currentColor = Color(rand() % 256, rand() % 256, rand() % 256);
+            circleShape.setOutlineColor(currentColor);
+            colorChangeClock.restart();
+        }
+    }
+
+    void draw(RenderTarget& target, RenderStates states) const override {
+        target.draw(circleShape, states);
+    }
+
+    void setPosition(const Vector2f& position) {
+        circleShape.setPosition(position);
+    }
+};
+class Score {
+private:
+    int currentScore;
+    int highestScore;
+
+public:
+    Score() : currentScore(0), highestScore(0) {}
+
+    void increaseScore() {
+        currentScore++;
+    }
+
+    int getCurrentScore() const { return currentScore; }
+
+    int getHighestScore() const { return highestScore; }
+
+    void updateHighestScore() {
+        if (currentScore > highestScore) {
+            highestScore = currentScore;
+        }
+    }
+
+    void resetScore() { currentScore = 0; }
+
+    void displayScore(RenderWindow& window, Font& font) {
+        Text scoreText("Score: " + to_string(currentScore), font, 24);
+        scoreText.setFillColor(Color::White);
+        scoreText.setPosition(10, 10);
+        window.draw(scoreText);
+
+        Text highestScoreText("Highest Score: " + to_string(highestScore), font, 24);
+        highestScoreText.setFillColor(Color::White);
+        highestScoreText.setPosition(10, 40);
+        window.draw(highestScoreText);
+    }
+
+    void saveHighestScoreToFile(const string& filename) {
+        ofstream outputFile(filename);
+        if (outputFile.is_open()) {
+            outputFile << highestScore;
+            outputFile.close();
+        } else {
+            cerr << "Error: Unable to open file for writing." << endl;
+        }
+    }
+
+    void loadHighestScoreFromFile(const string& filename) {
+        ifstream inputFile(filename);
+        if (inputFile.is_open()) {
+            inputFile >> highestScore;
+            inputFile.close();
+        } else {
+            cerr << "Error: Unable to open file for reading." << endl;
+        }
+    }
+};
 
 // void hideObjects(ArrayofBlocks randomline1,ArrayofBlocks randomline2,ArrayofBlocks singleline1,ArrayofBlocks singleline2,Pentagon pentagon,Rectangle rectangle){
 //     using Variant = variant<Ball<CircleShape>,Ball<RectangleShape>,ArrayofBlocks,Pentagon,Rectangle>;
