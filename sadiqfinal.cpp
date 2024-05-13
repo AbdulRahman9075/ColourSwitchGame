@@ -7,12 +7,8 @@
 using namespace sf;
 using namespace std;
 
-const float colorChangeTime = 2.0f;  // Change color every 2 seconds
-
-// class Drawable {
-// public:
-//     virtual void draw(RenderTarget& target, RenderStates states) const = 0;
-// };
+const float colorChangeTime = 2.0f; 
+ Color colors[5] = {Color(255,0,0),Color(0,255,0),Color(0,0,255),Color(255,255,0),Color(255,0,255)};
 
 class Object {
 public:
@@ -39,7 +35,7 @@ public:
 
     void updateColor() {
         if (colorChangeClock.getElapsedTime().asSeconds() >= colorChangeTime) {
-            currentColor = Color(rand() % 256, rand() % 256, rand() % 256);
+            currentColor = Color(colors[rand()%5]);
             rectangleShape.setOutlineColor(currentColor);
             colorChangeClock.restart();
         }
@@ -82,7 +78,7 @@ public:
 
     void updateColor() {
         if (colorChangeClock.getElapsedTime().asSeconds() >= colorChangeTime) {
-            currentColor = Color(rand() % 256, rand() % 256, rand() % 256);
+            currentColor = Color(colors[rand()%5]);
             pentagonShape.setOutlineColor(currentColor);
             colorChangeClock.restart();
         }
@@ -118,7 +114,7 @@ public:
 
     void updateColor() {
         if (colorChangeClock.getElapsedTime().asSeconds() >= colorChangeTime) {
-            currentColor = Color(rand() % 256, rand() % 256, rand() % 256);
+            currentColor = Color(colors[rand()%5]);
             circleShape.setOutlineColor(currentColor);
             colorChangeClock.restart();
         }
