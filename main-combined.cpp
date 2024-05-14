@@ -11,6 +11,7 @@
 #include <vector>
 #include <variant>
 #include <fstream>
+#include <cmath>
 
 
 using namespace sf;
@@ -28,6 +29,7 @@ class GameConst {
     static float obstacleSpeed;
     static float gravity;
     static float ballUpSpeed;
+    static Color colors[5];
 
     virtual void gameConst() = 0;
 
@@ -38,10 +40,11 @@ float GameConst::hidex = -5000;
 float GameConst::hidey = winHeight+5000;
 float GameConst::centerx = winLength/2 + 25;
 float GameConst::centery = winHeight/2;
-float GameConst::colorChangeTime = 2.0f;
+float GameConst::colorChangeTime = 1.0f;
 float GameConst::obstacleSpeed = 9;
 float GameConst::gravity = 20;
 float GameConst::ballUpSpeed = -70;
+Color GameConst::colors[5] = {Color(255,0,0),Color(0,255,0),Color(0,0,255),Color(255,255,0),Color(255,0,255)};
 
 
 
@@ -211,6 +214,10 @@ public:
     }
 
     void SetPosition(float posx ,float posy)const{shape.setPosition(posx,posy);}
+
+    float GetRadius(){ return shape.getRadius();}
+
+    float GetLength(){ return shape.getSize().x;}
 };
 
 class ArrayofBlocks: public Sprite {
@@ -223,7 +230,7 @@ class ArrayofBlocks: public Sprite {
     float InitialY;
     
     RectangleShape blocks[5];
-    Color colors[5] = {Color(255,0,0),Color(0,255,0),Color(0,0,255),Color(255,255,0),Color(255,0,255)};
+    
     public:
     
     
@@ -269,7 +276,7 @@ class ArrayofBlocks: public Sprite {
     void drawBasicBlocks(RenderWindow &win){
         srand(time(0));
         for(int i=0;i<5;i++){
-            blocks[i].setFillColor(colors[rand()%5]);
+            blocks[i].setFillColor(GameConst::colors[rand()%5]);
             win.draw(blocks[i]);
         }
         movingBlocks(GameConst::obstacleSpeed,win);
@@ -278,7 +285,7 @@ class ArrayofBlocks: public Sprite {
     
     void drawMonoBlocks(RenderWindow &win){
         srand(time(0));
-        Color c = colors[rand()%5];
+        Color c = GameConst::colors[rand()%5];
         for(int i=0;i<5;i++){
             blocks[i].setFillColor(c);
             win.draw(blocks[i]);
@@ -324,7 +331,7 @@ public:
 
     void updateColor() {
         if (colorChangeClock.getElapsedTime().asSeconds() >= GameConst::colorChangeTime) {
-            currentColor = Color(rand() % 256, rand() % 256, rand() % 256);
+            currentColor = Color(GameConst::colors[rand()%5]);
             pentagonShape.setOutlineColor(currentColor);
             colorChangeClock.restart(); 
         }
@@ -364,7 +371,7 @@ public:
 
     void updateColor() {
         if (colorChangeClock.getElapsedTime().asSeconds() >= GameConst::colorChangeTime) {
-            currentColor = Color(rand() % 256, rand() % 256, rand() % 256);
+            currentColor = Color(GameConst::colors[rand()%5]);
             circleShape.setOutlineColor(currentColor);
             colorChangeClock.restart();
         }
@@ -374,8 +381,12 @@ public:
         target.draw(circleShape, states);
     }
 
-    void setPosition(const Vector2f& position) {
+    void SetPosition(const Vector2f& position) {
         circleShape.setPosition(position);
+    }
+
+    Vector2f GetPosition() {
+        return circleShape.getPosition();
     }
 
     void changeInitialPosition(float posx,float posy){
@@ -383,6 +394,8 @@ public:
     }
 
     Color getColor(){return circleShape.getOutlineColor();}
+
+    float GetRadius(){ return circleShape.getRadius();}
 };
 
 class Score {
@@ -421,7 +434,7 @@ public:
         window.draw(highestScoreText);
     }
 
-    void saveHighestScoreToFile(const string& filename) {
+    void saveHighestScoreToFile(const string &filename) {
         ofstream outputFile(filename);
         if (outputFile.is_open()) {
             outputFile << highestScore;
@@ -443,13 +456,42 @@ public:
 };
 
 
-// bool checkCollision(const Ball<CircleShape>& ball, const Pentagon& pentagon) {
-//     FloatRect ballBounds = ball.getGlobalBounds();
-//     FloatRect pentagonBounds = pentagon.getGlobalBounds();
-    
-//     return ballBounds.intersects(pentagonBounds);
-// }
+template <typename T>
+void checkCollision( Ball<T> &ball, Pentagon &pentagon,RenderWindow &window) {
+    Vector2f currentBallPos = ball.GetPosition();
+    if (pentagon.getGlobalBounds().contains(Vector2f(currentBallPos)) && ball.getColor() != pentagon.getColor()) {
+                window.close();
+                }
 
+
+}
+template <typename T>
+void checkCollision( Ball<T>& ball, ColoredCircle &circle,RenderWindow &window) {
+    FloatRect ballBounds = ball.getGlobalBounds();
+    FloatRect circleBounds = circle.getGlobalBounds();
+    
+    if(ballBounds.intersects(circleBounds) && ball.getColor() != circle.getColor()){window.close();};
+}
+template <typename X, typename Y> 
+float  Distance(X obj1,Y obj2){
+    return sqrt( pow(obj1.GetPosition().x-obj2.GetPosition().x,2) + pow(obj1.GetPosition().y-obj2.GetPosition().y,2) );
+}
+
+bool checkCollision(Ball<CircleShape>& ball, ColoredCircle& circle, RenderWindow& window) {
+    float distance = Distance(ball,circle);
+    
+    if (distance <= ball.GetRadius() + circle.GetRadius() && ball.getColor() != circle.getColor()) {
+        return 1; 
+    }
+}
+
+bool checkCollision(Ball<RectangleShape>& ball, ColoredCircle& circle, RenderWindow& window) {
+    float distance = Distance(ball,circle);
+    
+    if (distance <= ball.GetLength() + circle.GetRadius() && ball.getColor() != circle.getColor()) {
+        return 1;
+    }
+}
 
 
 
@@ -475,7 +517,7 @@ int main()
     }
 
 
-    // Create a Ball with initialshape, red color, position, origin at (50, 50)
+    
     CircleShape circle(15);
     RectangleShape square(Vector2f(25,25));
     Ball<CircleShape> circleBall(circle, Color::Red, {GameConst::hidex,GameConst::hidey}, {50, 50});
@@ -507,7 +549,7 @@ int main()
             if (evnt.type == Event::Closed){
                 window.close();}
 
-            //Check if left mouse button is pressed
+            
             if (evnt.type == Event::MouseButtonPressed && evnt.mouseButton.button == Mouse::Left || evnt.type == Event::KeyPressed && evnt.key.code == Keyboard::Enter) {
                 
                 Vector2i currentMousePos = Mouse::getPosition(window);
@@ -522,6 +564,7 @@ int main()
                 else if(home.squarebutton.getGlobalBounds().contains(Vector2f(currentMousePos))) {
                     ballShape = "square";
                 }
+               
                 
                if(home.homebutton.getGlobalBounds().contains(Vector2f(currentMousePos))){
 
@@ -555,12 +598,8 @@ int main()
                     coloredCircle.changeInitialPosition(GameConst::centerx-30,GameConst::winHeight*3/4-55);///
                 }
 
-                // if( (circleBall.getColor() != pentagon.getColor() && pentagon.getGlobalBounds().contains(currentCircleBallPos)) || ((squareBall.getColor() != pentagon.getColor() && pentagon.getGlobalBounds().contains(currentSquareBallPos))) ){
-                //     window.close();
-                // }
-
             }
-
+            
             if(ballShape=="circle"){
                 if (((evnt.type == Event::MouseButtonPressed && evnt.mouseButton.button == Mouse::Left) ||
                     (evnt.type == Event::KeyPressed && evnt.key.code == Keyboard::Space)) &&
@@ -664,9 +703,12 @@ int main()
                 }
             }
             
+            //if(ballShape == "circle"){if(checkCollision(circleBall,coloredCircle,window)){window.close();}}
+            
             
         }
 
+    
     //s
     if (clk.getElapsedTime().asSeconds() >= 0.1f) {
         pentagon.updateColor();
