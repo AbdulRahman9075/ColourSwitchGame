@@ -43,7 +43,7 @@ float GameConst::centery = winHeight/2;
 float GameConst::colorChangeTime = 1.0f;
 float GameConst::obstacleSpeed = 9;
 float GameConst::gravity = 20;
-float GameConst::ballUpSpeed = -70;
+float GameConst::ballUpSpeed = -50;
 Color GameConst::colors[5] = {Color(255,0,0),Color(0,255,0),Color(0,0,255),Color(255,255,0),Color(255,0,255)};
 
 
@@ -456,42 +456,24 @@ public:
 };
 
 
-template <typename T>
-void checkCollision( Ball<T> &ball, Pentagon &pentagon,RenderWindow &window) {
-    Vector2f currentBallPos = ball.GetPosition();
-    if (pentagon.getGlobalBounds().contains(Vector2f(currentBallPos)) && ball.getColor() != pentagon.getColor()) {
-                window.close();
-                }
+// template <typename T>
+// void checkCollision( Ball<T> &ball, Pentagon &pentagon,RenderWindow &window) {
+//     Vector2f currentBallPos = ball.GetPosition();
+//     if (pentagon.getGlobalBounds().contains(Vector2f(currentBallPos)) && ball.getColor() != pentagon.getColor()) {
+//                 window.close();
+//                 }
 
 
-}
-template <typename T>
-void checkCollision( Ball<T>& ball, ColoredCircle &circle,RenderWindow &window) {
-    FloatRect ballBounds = ball.getGlobalBounds();
-    FloatRect circleBounds = circle.getGlobalBounds();
+// }
+// template <typename T>
+// void checkCollision( Ball<T>& ball, ColoredCircle &circle,RenderWindow &window) {
+//     FloatRect ballBounds = ball.getGlobalBounds();
+//     FloatRect circleBounds = circle.getGlobalBounds();
     
-    if(ballBounds.intersects(circleBounds) && ball.getColor() != circle.getColor()){window.close();};
-}
-template <typename X, typename Y> 
-float  Distance(X obj1,Y obj2){
-    return sqrt( pow(obj1.GetPosition().x-obj2.GetPosition().x,2) + pow(obj1.GetPosition().y-obj2.GetPosition().y,2) );
-}
+//     if(ballBounds.intersects(circleBounds) && ball.getColor() != circle.getColor()){window.close();};
+// }
 
-bool checkCollision(Ball<CircleShape>& ball, ColoredCircle& circle, RenderWindow& window) {
-    float distance = Distance(ball,circle);
-    
-    if (distance <= ball.GetRadius() + circle.GetRadius() && ball.getColor() != circle.getColor()) {
-        return 1; 
-    }
-}
 
-bool checkCollision(Ball<RectangleShape>& ball, ColoredCircle& circle, RenderWindow& window) {
-    float distance = Distance(ball,circle);
-    
-    if (distance <= ball.GetLength() + circle.GetRadius() && ball.getColor() != circle.getColor()) {
-        return 1;
-    }
-}
 
 
 
