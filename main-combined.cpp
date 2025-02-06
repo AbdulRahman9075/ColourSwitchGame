@@ -1,9 +1,3 @@
-
-//To compile file Change Paths and run following command
-
-//g++ -c main-combined.cpp -I"C:\Users\Abdul Rahman\Documents\GitHub\ColourSwitchGame\include";g++ main-combined.o -o main-combined -L"C:\Users\Abdul Rahman\Documents\GitHub\ColourSwitchGame\lib" -lsfml-graphics -lsfml-window -lsfml-system
-
-// To Run File run command: ./main-combined
 #include <SFML\Graphics.hpp>
 #include <iostream>
 #include <cstring>
